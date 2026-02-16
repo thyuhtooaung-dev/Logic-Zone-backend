@@ -9,8 +9,13 @@ router.get("/", async (req, res) => {
   try {
     const { search, department, page = 1, limit = 10 } = req.query;
 
-    const currentPage = Math.max(1, +page);
-    const limitPerPage = Math.max(1, +limit);
+    const MAX_LIMIT = 100;
+    const toInt = (value: unknown, fallback: number) => {
+      const n = typeof value === "string" ? Number.parseInt(value, 10) : NaN;
+      return Number.isFinite(n) ? n : fallback;
+    };
+    const currentPage = Math.max(1, toInt(page, 1));
+    const limitPerPage = Math.min(MAX_LIMIT, Math.max(1, toInt(limit, 10)));
 
     const offset = (currentPage - 1) * limitPerPage;
 
@@ -28,7 +33,8 @@ router.get("/", async (req, res) => {
 
     // if department filter exists, match department name
     if (department) {
-      filterCondition.push(ilike(departments.name, `%${departments}%`));
+     const deptPattern = `%${String(department).replace(/[%_]/g, `\\$&`)}%`;
+     filterCondition.push(ilike(departments.name, deptPattern))
     }
 
     // combine all filters using AND if any exist
@@ -62,8 +68,8 @@ router.get("/", async (req, res) => {
         limit: limitPerPage,
         total: totalCount,
         totalPage: Math.ceil(totalCount / limitPerPage),
-      }
-    })
+      },
+    });
   } catch (err) {
     console.log(`GET /subjects error: ${err}`);
     res.status(500).json({ error: "Failed to get subjects" });
