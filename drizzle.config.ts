@@ -1,8 +1,22 @@
 import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set in .env file");
+const normalizeDatabaseUrl = (value: string | undefined) => {
+  if (!value) return undefined;
+
+  const trimmed = value.trim();
+  const unwrapped = trimmed.replace(/^['\"]|['\"]$/g, "");
+  return unwrapped;
+};
+
+const databaseUrl =
+  normalizeDatabaseUrl(process.env.MIGRATION_DATABASE_URL) ??
+  normalizeDatabaseUrl(process.env.DATABASE_URL);
+
+if (!databaseUrl) {
+  throw new Error(
+    "Set MIGRATION_DATABASE_URL or DATABASE_URL in .env before running migrations",
+  );
 }
 
 export default defineConfig({
@@ -10,6 +24,6 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: databaseUrl,
   },
 });
