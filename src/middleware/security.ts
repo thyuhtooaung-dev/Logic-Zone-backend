@@ -16,17 +16,17 @@ const securityMiddleware = async (
     switch (role) {
       case "admin":
         limit = 20;
-        message = "Admin request limit exceeded (20 per minutes). Slow Down.";
+        message = "Admin request limit exceeded (20 per minute). Slow Down.";
         break;
       case "teacher":
       case "student":
         limit = 10;
-        message = "User request limit exceeded (10 per minutes). Please Wait.";
+        message = "User request limit exceeded (10 per minute). Please Wait.";
         break;
       default:
         limit = 5;
         message =
-          "Guest request limit exceeded (5 per minutes). Please sign up for higher limits";
+          "Guest request limit exceeded (5 per minute). Please sign up for higher limits";
         break;
     }
 
@@ -38,12 +38,27 @@ const securityMiddleware = async (
       }),
     );
 
+    const remoteAddress = req.socket.remoteAddress ?? req.ip;
+    if (!remoteAddress) {
+      const requestId =
+        req.header("x-request-id") ?? req.header("x-correlation-id") ?? "unknown";
+      console.warn(
+        `[securityMiddleware] Missing remote address for request`,
+        {
+          requestId,
+          method: req.method,
+          url: req.originalUrl ?? req.url,
+          userAgent: req.header("user-agent") ?? "unknown",
+        },
+      );
+    }
+
     const arcjetRequest: ArcjetNodeRequest = {
       headers: req.headers,
       method: req.method,
       url: req.originalUrl ?? req.url,
       socket: {
-        remoteAddress: req.socket.remoteAddress ?? req.ip ?? "0.0.0.0",
+        remoteAddress,
       },
     };
 
@@ -54,7 +69,7 @@ const securityMiddleware = async (
         .status(403)
         .json({
           error: "Forbidden",
-          message: "Automated request are not allowed. ",
+          message: "Automated requests are not allowed.",
         });
     }
 
@@ -66,7 +81,9 @@ const securityMiddleware = async (
     }
 
     if (decision.isDenied() && decision.reason.isRateLimit()) {
-      return res.status(403).json({
+      const retryAfterSeconds = Math.max(1, Math.ceil(decision.reason.reset || 60));
+
+      return res.status(429).set("Retry-After", retryAfterSeconds.toString()).json({
         error: "Too many requests",
         message,
       });
