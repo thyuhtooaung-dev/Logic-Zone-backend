@@ -8,7 +8,7 @@ import subjectsRouter from "./routes/subjects.js"
 import securityMiddleware from "./middleware/security.js";
 
 import { toNodeHandler } from "better-auth/node";
-import { auth } from "./lib/auth";
+import { auth } from "./lib/auth.js";
 
 const app = express();
 const port = 3000
