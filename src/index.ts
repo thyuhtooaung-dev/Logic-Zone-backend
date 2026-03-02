@@ -11,8 +11,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 
 const app = express();
-const port = Number(process.env.PORT) || 3000;
-const host = "0.0.0.0";
+const port = 3000
 
 if(!process.env.FRONTEND_URL) {
   throw new Error("Missing FRONTEND_URL");
@@ -36,6 +35,6 @@ app.get("/", (req, res) => {
 
 app.use("/api/subjects", subjectsRouter);
 
-app.listen(port, host, () => {
-  console.log(`Server started on ${host}:${port}`);
-});
+app.listen(port, () => {
+  console.log(`Server started on port ${port}`);
+})
