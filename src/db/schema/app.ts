@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { pgTable } from "drizzle-orm/pg-core/table";
 import { relations } from "drizzle-orm/relations";
-import { user } from "./auth";
+import { user } from "./auth.js";
 
 const timestamps = {
   createdAt: timestamp("created_at").defaultNow().notNull(),
