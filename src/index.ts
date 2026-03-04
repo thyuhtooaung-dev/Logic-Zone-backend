@@ -5,6 +5,8 @@ import express from "express";
 import cors from "cors";
 
 import subjectsRouter from "./routes/subjects.js";
+import usersRouter from "./routes/users.js";
+import classesRouter from "./routes/classes.js"
 import securityMiddleware from "./middleware/security.js";
 
 import { toNodeHandler } from "better-auth/node";
@@ -37,8 +39,9 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/subjects", subjectsRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/classes", classesRouter)
 
-// Removed the 'host' parameter to let Node bind automatically
 app.listen(port, () => {
   console.log(`Server started successfully on port ${port}`);
 });
