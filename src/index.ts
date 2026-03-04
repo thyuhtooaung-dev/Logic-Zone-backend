@@ -16,13 +16,13 @@ const app = express();
 
 const port = Number(process.env.PORT) || 3000;
 
-if (!process.env.FRONTEND_URL) {
+if (!process.env.FRONTEND_URL || !process.env.VERCEL_URL) {
   throw new Error("Missing FRONTEND_URL");
 }
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: [process.env.FRONTEND_URL, process.env.VERCEL_URL],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   }),
