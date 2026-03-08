@@ -1,15 +1,14 @@
+import { relations } from "drizzle-orm";
 import {
-  index,
   integer,
   jsonb,
+  index,
   pgEnum,
+  pgTable,
   text,
-  uniqueIndex,
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
-import { pgTable } from "drizzle-orm/pg-core/table";
-import { relations } from "drizzle-orm/relations";
 import { user } from "./auth.js";
 
 const timestamps = {
@@ -26,28 +25,26 @@ export const classStatusEnum = pgEnum("class_status", [
   "archived",
 ]);
 
-export type ClassSchedule = {
-  day: string;
-  startTime: string;
-  endTime: string;
-};
-
 export const departments = pgTable("departments", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   code: varchar("code", { length: 50 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
-  description: varchar("description", { length: 255 }),
+  description: text("description"),
+
   ...timestamps,
 });
 
 export const subjects = pgTable("subjects", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+
   departmentId: integer("department_id")
     .notNull()
     .references(() => departments.id, { onDelete: "restrict" }),
-  code: varchar("code", { length: 255 }).notNull().unique(),
+
   name: varchar("name", { length: 255 }).notNull(),
-  description: varchar("description", { length: 255 }),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+  description: text("description"),
+
   ...timestamps,
 });
 
@@ -55,51 +52,56 @@ export const classes = pgTable(
   "classes",
   {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+
     subjectId: integer("subject_id")
       .notNull()
       .references(() => subjects.id, { onDelete: "cascade" }),
     teacherId: text("teacher_id")
       .notNull()
       .references(() => user.id, { onDelete: "restrict" }),
+
     inviteCode: varchar("invite_code", { length: 50 }).notNull().unique(),
     name: varchar("name", { length: 255 }).notNull(),
     bannerCldPubId: text("banner_cld_pub_id"),
     bannerUrl: text("banner_url"),
+    capacity: integer("capacity").notNull().default(50),
     description: text("description"),
-    capacity: integer("capacity").default(50).notNull(),
-    status: classStatusEnum("status").default("active").notNull(),
-    schedules: jsonb("schedules").$type<ClassSchedule[]>().notNull(),
+    status: classStatusEnum("status").notNull().default("active"),
+    schedules: jsonb("schedules").$type<Schedule[]>().notNull(),
+
     ...timestamps,
   },
-  (table) => [
-    index("classes_subject_id_idx").on(table.subjectId),
-    index("classes_teacher_id_idx").on(table.teacherId),
-  ],
+  (table) => ({
+    subjectIdIdx: index("classes_subject_id_idx").on(table.subjectId),
+    teacherIdIdx: index("classes_teacher_id_idx").on(table.teacherId),
+  })
 );
 
 export const enrollments = pgTable(
   "enrollments",
   {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+
     studentId: text("student_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     classId: integer("class_id")
       .notNull()
       .references(() => classes.id, { onDelete: "cascade" }),
+
     ...timestamps,
   },
-  (table) => [
-    uniqueIndex("enrollments_student_id_class_id_uq").on(
+  (table) => ({
+    studentIdIdx: index("enrollments_student_id_idx").on(table.studentId),
+    classIdIdx: index("enrollments_class_id_idx").on(table.classId),
+    studentClassUnique: index("enrollments_student_class_unique").on(
       table.studentId,
-      table.classId,
+      table.classId
     ),
-    index("enrollments_student_id_idx").on(table.studentId),
-    index("enrollments_class_id_idx").on(table.classId),
-  ],
+  })
 );
 
-export const departmentRelations = relations(departments, ({ many }) => ({
+export const departmentsRelations = relations(departments, ({ many }) => ({
   subjects: many(subjects),
 }));
 

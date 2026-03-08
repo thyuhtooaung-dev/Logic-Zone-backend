@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1771142520413,
-      "tag": "0000_married_zaran",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1772261862344,
-      "tag": "0001_right_crystal",
+      "when": 1767265382696,
+      "tag": "0000_flat_purifiers",
       "breakpoints": true
     }
   ]
