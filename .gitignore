@@ -68,6 +68,8 @@ web_modules/
 # dotenv environment variable files
 ../classroom-frontend/.env
 .env.*
+.env
+.env.example
 !.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
