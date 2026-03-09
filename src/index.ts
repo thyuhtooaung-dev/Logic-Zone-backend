@@ -17,9 +17,22 @@ import { auth } from "./lib/auth.js";
 const app = express();
 const PORT = 3000;
 
+if (!process.env.FRONTEND_URL) throw Error("FRONTEND_URL needed");
+
+const allowedOrigins = Array.from(
+  new Set(
+    [
+      process.env.FRONTEND_URL,
+      process.env.VERCEL_URL,
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+    ].filter((value): value is string => Boolean(value))
+  )
+);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
