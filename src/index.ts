@@ -14,16 +14,39 @@ import statsRouter from "./routes/stats.js";
 import enrollmentsRouter from "./routes/enrollments.js";
 import { auth } from "./lib/auth.js";
 
+const normalizeEnvValue = (value?: string) =>
+  value?.trim().replace(/^['"]|['"]$/g, "");
+
+const normalizeOrigin = (value?: string) => {
+  const normalized = normalizeEnvValue(value);
+  if (!normalized) return undefined;
+
+  const withProtocol = /^https?:\/\//i.test(normalized)
+    ? normalized
+    : `https://${normalized}`;
+
+  try {
+    return new URL(withProtocol).origin;
+  } catch {
+    return undefined;
+  }
+};
+
 const app = express();
 const PORT = 3000;
 
-if (!process.env.FRONTEND_URL) throw Error("FRONTEND_URL needed");
+const frontendOrigin = normalizeOrigin(process.env.FRONTEND_URL);
+const vercelOrigin = normalizeOrigin(process.env.VERCEL_URL);
+
+if (!frontendOrigin && !vercelOrigin) {
+  throw Error("FRONTEND_URL or VERCEL_URL needed");
+}
 
 const allowedOrigins = Array.from(
   new Set(
     [
-      process.env.FRONTEND_URL,
-      process.env.VERCEL_URL,
+      frontendOrigin,
+      vercelOrigin,
       "http://localhost:5173",
       "http://127.0.0.1:5173",
     ].filter((value): value is string => Boolean(value))
