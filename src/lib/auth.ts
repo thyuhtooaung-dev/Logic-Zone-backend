@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 import { db } from "../db/index.js";
 import * as schema from "../db/schema/auth.js";
+import { normalizeEnvValue, normalizeOrigin } from "../config/env.js";
 
 const hasGoogleOAuth =
   Boolean(process.env.GOOGLE_CLIENT_ID) &&
@@ -12,11 +13,29 @@ const hasGithubOAuth =
   Boolean(process.env.GITHUB_CLIENT_ID) &&
   Boolean(process.env.GITHUB_CLIENT_SECRET);
 
+const parseBoolean = (value: string | undefined, fallback: boolean) => {
+  const normalized = normalizeEnvValue(value)?.toLowerCase();
+  if (!normalized) return fallback;
+  if (["true", "1", "yes", "y", "on"].includes(normalized)) return true;
+  if (["false", "0", "no", "n", "off"].includes(normalized)) return false;
+  return fallback;
+};
+
+const cookieSameSite = (
+  normalizeEnvValue(process.env.AUTH_COOKIE_SAME_SITE)?.toLowerCase() as
+    | "lax"
+    | "strict"
+    | "none"
+    | undefined
+) ?? "lax";
+
+const cookieSecure = parseBoolean(process.env.AUTH_COOKIE_SECURE, false);
+
 const trustedOrigins = Array.from(
   new Set(
     [
-      process.env.FRONTEND_URL,
-      process.env.VERCEL_URL,
+      normalizeOrigin(process.env.FRONTEND_URL),
+      normalizeOrigin(process.env.VERCEL_URL),
       "http://localhost:5173",
       "http://127.0.0.1:5173",
     ].filter((value): value is string => Boolean(value))
@@ -30,20 +49,20 @@ export const auth = betterAuth({
   advanced: {
     trustedProxyHeaders: true,
     cookieOptions: {
-      useSecureCookies: true,
+      useSecureCookies: cookieSecure,
     },
     cookies: {
       state: {
         attributes: {
-          sameSite: "none",
-          secure: true,
+          sameSite: cookieSameSite,
+          secure: cookieSecure,
         },
       },
     },
-    useSecureCookies: true,
+    useSecureCookies: cookieSecure,
     defaultCookieAttributes: {
-      sameSite: "none",
-      secure: true,
+      sameSite: cookieSameSite,
+      secure: cookieSecure,
       httpOnly: true,
       path: "/",
     },

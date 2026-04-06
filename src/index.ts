@@ -2,6 +2,7 @@ import('apminsight')
   .then(({ default: AgentAPI }) => AgentAPI.config())
   .catch(() => console.log('APM not available in this environment'));
 
+import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import { toNodeHandler } from "better-auth/node";
@@ -13,45 +14,11 @@ import departmentsRouter from "./routes/departments.js";
 import statsRouter from "./routes/stats.js";
 import enrollmentsRouter from "./routes/enrollments.js";
 import { auth } from "./lib/auth.js";
-
-const normalizeEnvValue = (value?: string) =>
-  value?.trim().replace(/^['"]|['"]$/g, "");
-
-const normalizeOrigin = (value?: string) => {
-  const normalized = normalizeEnvValue(value);
-  if (!normalized) return undefined;
-
-  const withProtocol = /^https?:\/\//i.test(normalized)
-    ? normalized
-    : `https://${normalized}`;
-
-  try {
-    return new URL(withProtocol).origin;
-  } catch {
-    return undefined;
-  }
-};
+import { getAllowedOrigins, getPort } from "./config/env.js";
 
 const app = express();
-const PORT = 3000;
-
-const frontendOrigin = normalizeOrigin(process.env.FRONTEND_URL);
-const vercelOrigin = normalizeOrigin(process.env.VERCEL_URL);
-
-if (!frontendOrigin && !vercelOrigin) {
-  throw Error("FRONTEND_URL or VERCEL_URL needed");
-}
-
-const allowedOrigins = Array.from(
-  new Set(
-    [
-      frontendOrigin,
-      vercelOrigin,
-      "http://localhost:5173",
-      "http://127.0.0.1:5173",
-    ].filter((value): value is string => Boolean(value))
-  )
-);
+const PORT = getPort(3000);
+const allowedOrigins = getAllowedOrigins();
 
 app.use(
   cors({
